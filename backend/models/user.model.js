@@ -23,6 +23,24 @@ const userSchema = new mongoose.Schema(
       longitude: String,
       place: String,
     },
+    vpnHistory: [{
+      timestamp: { type: Date, default: Date.now },
+      isVpn: { type: Boolean, required: true },
+      vpnProvider: String,
+      confidenceScore: Number,
+      ip: String,
+      location: {
+        city: String,
+        region: String,
+        country: String
+      }
+    }],
+    currentVpnStatus: {
+      isVpn: { type: Boolean, default: false },
+      vpnProvider: String,
+      detectedAt: Date,
+      confidenceScore: Number
+    }
   },
   { timestamps: true }
 );
