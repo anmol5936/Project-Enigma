@@ -9,6 +9,7 @@ import requestIp from "request-ip";
 import axios from "axios";
 import crypto from "crypto";
 import UAParser from "ua-parser-js";
+import { Flag } from "../models/flag.model.js";
 
 async function checkIPReputation(ip) {
   try {
@@ -96,6 +97,8 @@ async function fetchGeolocation(ip) {
 export const register = async (req, res) => {
   try {
     const { name, username, email, password } = req.body;
+
+    // Input validation
     if (!name || !username || !email || !password) {
       return res.status(401).json({
         message: "Something is missing, please check!",
@@ -103,6 +106,7 @@ export const register = async (req, res) => {
       });
     }
 
+    // Check existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(401).json({
@@ -114,14 +118,26 @@ export const register = async (req, res) => {
       });
     }
 
+    // Get user information
     const userIP = requestIp.getClientIp(req);
     const geoLocation = await fetchGeolocation(userIP);
     const IPReputation = await checkIPReputation(userIP);
     const deviceFingerPrint = generateDeviceFingerprint(req);
+
+    // Generate OTP and hash password
     const otp = generateOTP();
     const otpExpiry = getOTPExpiry();
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create initial Flag document
+    const newFlag = new Flag({
+      flaggedWords: [],
+      positiveCount: 0,
+      negativeCount: 0,
+    });
+    const savedFlag = await newFlag.save();
+
+    // Create user with the flag reference
     const newUser = await User.create({
       name,
       username,
@@ -135,11 +151,12 @@ export const register = async (req, res) => {
       lastLoginLocation: geoLocation,
       isFlag: false,
       flagAddedAt: null,
-      flagged: {},
+      flagged: savedFlag._id, // Use the Flag document's ID instead of empty object
       IPReputation: IPReputation,
       deviceFingerPrint: deviceFingerPrint,
     });
 
+    // Send OTP email
     await sendOTPEmail(email, otp);
 
     return res.status(201).json({
@@ -149,7 +166,24 @@ export const register = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Registration error:", error);
+
+    // More detailed error handling
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: Object.values(error.errors).map((err) => err.message),
+        success: false,
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "Duplicate key error",
+        success: false,
+      });
+    }
+
     return res.status(500).json({
       message: "Error registering user",
       success: false,
