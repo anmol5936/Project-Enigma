@@ -55,18 +55,11 @@ const RightSidebar = () => {
           </div>
         </div>
 
-        {/* Suggested Users Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-700">Suggested for you</h2>
-            <Button variant="link" className="text-xs text-violet-600 hover:text-violet-700">
-              See All
-            </Button>
-          </div>
-          <div className="space-y-2">
+      
+
+        <div className="space-y-2">
             <SuggestedUsers />
           </div>
-        </div>
 
         {/* Quick Links */}
         <div className="pt-4 border-t border-violet-100">
