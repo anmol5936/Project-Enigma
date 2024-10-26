@@ -103,16 +103,16 @@ export const addNewPost = async (req, res) => {
 
     // Fetch updated user data to ensure post count is correct
     const updatedUser = await User.findById(userId)
-      .populate('posts')
-      .populate('followers')
-      .populate('following')
-      .populate('bookmarks');
+      .populate("posts")
+      .populate("followers")
+      .populate("following")
+      .populate("bookmarks");
 
     res.status(201).json({
       success: true,
       message: "Post created successfully",
       post: populatedPost,
-      user: updatedUser
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Error in addNewPost:", error);
@@ -132,27 +132,27 @@ export const getUserProfile = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findById(userId)
-      .populate('posts')
-      .populate('followers')
-      .populate('following')
-      .populate('bookmarks');
+      .populate("posts")
+      .populate("followers")
+      .populate("following")
+      .populate("bookmarks");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      user
+      user,
     });
   } catch (error) {
     console.error("Error in getUserProfile:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch user profile"
+      message: error.message || "Failed to fetch user profile",
     });
   }
 };

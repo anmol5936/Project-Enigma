@@ -133,6 +133,9 @@ export const register = async (req, res) => {
       emailVerified: false,
       lastLoginIP: userIP,
       lastLoginLocation: geoLocation,
+      isFlag: false,
+      flagAddedAt: null,
+      flagged: {},
       IPReputation: IPReputation,
       deviceFingerPrint: deviceFingerPrint,
     });

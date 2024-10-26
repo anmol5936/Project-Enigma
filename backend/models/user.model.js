@@ -19,11 +19,14 @@ const userSchema = new mongoose.Schema(
     emailVerified: { type: Boolean, default: false },
     otpVerified: { type: Boolean, default: false },
     lastLoginIP: { type: String },
+    isFlag: { type: Boolean, default: false },
+    flagAddedAt: { type: Date, default: null },
     lastLoginLocation: {
       latitude: String,
       longitude: String,
       place: String,
     },
+    flagged: { type: mongoose.Schema.Types.ObjectId, ref: "Flag" },
     IPReputation: { risk: String, score: Number },
     deviceFingerPrint: { type: String, default: "" },
     vpnHistory: [
