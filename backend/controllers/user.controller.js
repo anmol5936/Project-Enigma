@@ -7,6 +7,68 @@ import { Post } from "../models/post.model.js";
 import { generateOTP, getOTPExpiry, sendOTPEmail } from "../utils/email.js";
 import requestIp from "request-ip";
 import axios from "axios";
+import crypto from "crypto";
+import UAParser from "ua-parser-js";
+
+async function checkIPReputation(ip) {
+  try {
+    // Skip check for localhost/development
+    if (ip === "127.0.0.1" || ip === "::1") {
+      return { risk: "low", score: 0 };
+    }
+
+    // Using AbuseIPDB API for IP reputation check
+    const response = await axios.get("https://api.abuseipdb.com/api/v2/check", {
+      params: {
+        ipAddress: ip,
+        maxAgeInDays: 90,
+      },
+      headers: {
+        Key: "a21c00301d5f7f86b7542f1128d72486516c6126bf5a322543ff8cf9dcba1ffde57d19b25add30f5", // Replace with your API key
+        Accept: "application/json",
+      },
+    });
+
+    const data = response.data.data;
+    const abuseScore = data.abuseConfidenceScore;
+
+    // Calculate risk level based on abuse score
+    let risk = "low";
+    if (abuseScore > 80) {
+      risk = "high";
+    } else if (abuseScore > 40) {
+      risk = "medium";
+    }
+
+    return {
+      risk,
+      score: abuseScore,
+    };
+  } catch (error) {
+    console.error("IP reputation check error:", error);
+    // Default to medium risk if the check fails
+    return { risk: "medium", score: 50 };
+  }
+}
+
+function generateDeviceFingerprint(req) {
+  const ua = new UAParser(req.headers["user-agent"]);
+  const deviceInfo = {
+    browser: ua.getBrowser(),
+    os: ua.getOS(),
+    device: ua.getDevice(),
+    screenResolution: req.headers["sec-ch-viewport-width"]
+      ? `${req.headers["sec-ch-viewport-width"]}x${req.headers["sec-ch-viewport-height"]}`
+      : "unknown",
+    timezone: req.headers["time-zone"] || "unknown",
+    language: req.headers["accept-language"] || "unknown",
+    platform: ua.getEngine().name || "unknown",
+  };
+
+  // Create a unique device identifier
+  const deviceString = JSON.stringify(deviceInfo);
+  return crypto.createHash("sha256").update(deviceString).digest("hex");
+}
 
 async function fetchGeolocation(ip) {
   try {
@@ -33,8 +95,8 @@ async function fetchGeolocation(ip) {
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {
+    const { name, username, email, password } = req.body;
+    if (!name || !username || !email || !password) {
       return res.status(401).json({
         message: "Something is missing, please check!",
         success: false,
@@ -54,11 +116,14 @@ export const register = async (req, res) => {
 
     const userIP = requestIp.getClientIp(req);
     const geoLocation = await fetchGeolocation(userIP);
+    const IPReputation = await checkIPReputation(userIP);
+    const deviceFingerPrint = generateDeviceFingerprint(req);
     const otp = generateOTP();
     const otpExpiry = getOTPExpiry();
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
+      name,
       username,
       email,
       password: hashedPassword,
@@ -68,6 +133,8 @@ export const register = async (req, res) => {
       emailVerified: false,
       lastLoginIP: userIP,
       lastLoginLocation: geoLocation,
+      IPReputation: IPReputation,
+      deviceFingerPrint: deviceFingerPrint,
     });
 
     await sendOTPEmail(email, otp);
@@ -176,7 +243,7 @@ export const login = async (req, res) => {
 
     // Get VPN status from the middleware
     const vpnStatus = req.vpnStatus || { isVpn: false };
-    
+
     // Update user's VPN history and current status
     user.vpnHistory.push({
       isVpn: vpnStatus.isVpn,
@@ -186,15 +253,15 @@ export const login = async (req, res) => {
       location: {
         city: geoLocation.place,
         region: geoLocation.latitude,
-        country: geoLocation.longitude
-      }
+        country: geoLocation.longitude,
+      },
     });
 
     user.currentVpnStatus = {
       isVpn: vpnStatus.isVpn,
       vpnProvider: vpnStatus.provider,
       detectedAt: new Date(),
-      confidenceScore: vpnStatus.confidence
+      confidenceScore: vpnStatus.confidence,
     };
 
     if (user.isMFAEnabled) {
@@ -248,7 +315,7 @@ export const login = async (req, res) => {
           followers: user.followers,
           following: user.following,
           posts: user.posts,
-          currentVpnStatus: user.currentVpnStatus
+          currentVpnStatus: user.currentVpnStatus,
         },
       });
   } catch (error) {

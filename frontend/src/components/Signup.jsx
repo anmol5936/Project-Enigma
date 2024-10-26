@@ -4,13 +4,14 @@ import { Button } from "./ui/button";
 import axios from "axios";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, User, Mail, Lock } from "lucide-react";
+import { Loader2, User, Mail, Lock, UserCircle } from "lucide-react";
 import { useSelector } from "react-redux";
 import OTPVerification from "./OTPVerification";
 import { motion } from "framer-motion";
 
 const Signup = () => {
   const [input, setInput] = useState({
+    name: "",
     username: "",
     email: "",
     password: "",
@@ -42,6 +43,7 @@ const Signup = () => {
         setUserId(res.data.userId);
         toast.success(res.data.message);
         setInput({
+          name: "",
           username: "",
           email: "",
           password: "",
@@ -57,7 +59,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/chat");
     }
   }, [user, navigate]);
 
@@ -97,6 +99,19 @@ const Signup = () => {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
+            <div className="relative">
+              <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-4 w-4" />
+              <Input
+                type="text"
+                name="name"
+                placeholder="Enter your full name"
+                value={input.name}
+                onChange={changeEventHandler}
+                className="pl-10 focus-visible:ring-purple-400 transition-all duration-300 border-purple-100"
+                required
+              />
+            </div>
+
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-4 w-4" />
               <Input

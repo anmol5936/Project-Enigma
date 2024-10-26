@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    name: { type: String, required: true },
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -23,24 +24,28 @@ const userSchema = new mongoose.Schema(
       longitude: String,
       place: String,
     },
-    vpnHistory: [{
-      timestamp: { type: Date, default: Date.now },
-      isVpn: { type: Boolean, required: true },
-      vpnProvider: String,
-      confidenceScore: Number,
-      ip: String,
-      location: {
-        city: String,
-        region: String,
-        country: String
-      }
-    }],
+    IPReputation: { risk: String, score: Number },
+    deviceFingerPrint: { type: String, default: "" },
+    vpnHistory: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        isVpn: { type: Boolean, required: true },
+        vpnProvider: String,
+        confidenceScore: Number,
+        ip: String,
+        location: {
+          city: String,
+          region: String,
+          country: String,
+        },
+      },
+    ],
     currentVpnStatus: {
       isVpn: { type: Boolean, default: false },
       vpnProvider: String,
       detectedAt: Date,
-      confidenceScore: Number
-    }
+      confidenceScore: Number,
+    },
   },
   { timestamps: true }
 );
