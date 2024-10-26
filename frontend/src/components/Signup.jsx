@@ -59,7 +59,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/chat");
+      navigate("/");
     }
   }, [user, navigate]);
 
