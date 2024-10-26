@@ -174,6 +174,29 @@ export const login = async (req, res) => {
     const userIP = requestIp.getClientIp(req);
     const geoLocation = await fetchGeolocation(userIP);
 
+    // Get VPN status from the middleware
+    const vpnStatus = req.vpnStatus || { isVpn: false };
+    
+    // Update user's VPN history and current status
+    user.vpnHistory.push({
+      isVpn: vpnStatus.isVpn,
+      vpnProvider: vpnStatus.provider,
+      confidenceScore: vpnStatus.confidence,
+      ip: userIP,
+      location: {
+        city: geoLocation.place,
+        region: geoLocation.latitude,
+        country: geoLocation.longitude
+      }
+    });
+
+    user.currentVpnStatus = {
+      isVpn: vpnStatus.isVpn,
+      vpnProvider: vpnStatus.provider,
+      detectedAt: new Date(),
+      confidenceScore: vpnStatus.confidence
+    };
+
     if (user.isMFAEnabled) {
       const otp = generateOTP();
       const otpExpiry = getOTPExpiry();
@@ -191,6 +214,7 @@ export const login = async (req, res) => {
         message: "OTP sent to your email",
         userId: user._id.toString(),
         requiresOTP: true,
+        vpnDetected: vpnStatus.isVpn,
         success: true,
       });
     }
@@ -214,6 +238,7 @@ export const login = async (req, res) => {
       .json({
         message: `Welcome back ${user.username}`,
         success: true,
+        vpnDetected: vpnStatus.isVpn,
         user: {
           _id: user._id,
           username: user.username,
@@ -223,6 +248,7 @@ export const login = async (req, res) => {
           followers: user.followers,
           following: user.following,
           posts: user.posts,
+          currentVpnStatus: user.currentVpnStatus
         },
       });
   } catch (error) {
@@ -233,7 +259,6 @@ export const login = async (req, res) => {
     });
   }
 };
-
 export const verifyLoginOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
