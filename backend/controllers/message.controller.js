@@ -75,7 +75,9 @@ export const sendMessage = async (req, res) => {
     const { textMessage: message } = req.body;
 
     // Encrypt message and prepare conversation
-    const encryptedMessage = encryptText(message);
+    let encryptedMessage = message;
+    //if (responseClassification === "negative") {
+    encryptedMessage = encryptText(message);
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
     });

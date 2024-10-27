@@ -27,7 +27,7 @@ const SuggestedUsers = () => {
           See All
         </span>
       </div>
-      {suggestedUsers.map((user) => (
+      {suggestedUsers.filter((user) => !user.isFlag).map((user) => (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
